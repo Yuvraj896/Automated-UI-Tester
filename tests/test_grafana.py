@@ -1,23 +1,47 @@
 from playwright.sync_api import sync_playwright, expect
 from pages.login_page import LoginPage
+from pages.home_page import HomePage
+from pages.dashboard_page import DashBoardPage
+from pages.panel_page import PanelPage
 
-def test_grafana_login():
+def test_grafana():
     with sync_playwright() as p:
-
-        #open any browser
+        # browser
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
-        #create Login Page Object
+        # Login
         login_page = LoginPage(page)
         login_page.navigate("http://localhost:3000")
-        
-        #Can provide new password in this field as well
         login_page.login("admin", "admin")
+        
+        # ASSERT: Grafana shell is visible (from codegen)
+        expect(page.get_by_role("navigation", name="Breadcrumbs")).to_be_visible()
 
-        # New page to have This title
-        expect(page.get_by_role("heading", name="Welcome to Grafana")).to_be_visible()
+        # Create dashboard
+        home_page = HomePage(page)
+        home_page.create_dashboard()
+
+        # See if Add Visualisation is there on page
+        expect(page.get_by_test_id("data-testid Create new panel button")).to_contain_text("Add visualization")
+        
+
+        #now adding a new panel
+        dashboard_page = DashBoardPage(page)
+        dashboard_page.add_new_panel()
+
+        expect(page.get_by_test_id("data-testid Panel editor content")).to_be_visible()
+
+        # Now Panel page, where we select the Timeseries visualisation 
+        panel_page = PanelPage(page)
+        panel_page.select_testdata_source()
+
+        expect(page.get_by_text("Visualization")).to_be_visible()
+        # timeseries option available
+        expect(panel_page.timeseries_option).to_be_visible()
+
+        
+        panel_page.select_timeseries_visualization()
+        panel_page.select_query_type()
 
         browser.close()
-
-
