@@ -31,19 +31,19 @@ def test_grafana(page: Page, assert_snapshot):
     # Now Panel page, where we select the Timeseries visualisation 
     panel_page = PanelPage(page)
 
-    navigated = panel_page.ensure_testdata_datasource_exists()
-    if navigated:
-        # DOM changed → recreate Page Objects
-        dashboard_page = DashBoardPage(page)
-        panel_page = PanelPage(page)
+    popup = panel_page.ensure_testdata_exists()
 
-        # Re-enter panel editor
+    if popup:
+        # We are now inside popup page → rebuild objects with popup context
+        dashboard_page = DashBoardPage(popup)
+        panel_page = PanelPage(popup)
+
+        # Re-enter panel editor inside popup window
         dashboard_page.add_new_panel()
-
-    #if there is already test source    
+  
     panel_page.select_testdata_source()
 
-    expect(page.get_by_text("Visualization")).to_be_visible()
+    expect(panel_page.panel_editor.get_by_text("Visualization")).to_be_visible()
     # timeseries option available
     expect(panel_page.timeseries_option).to_be_visible()
 

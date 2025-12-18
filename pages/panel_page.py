@@ -27,13 +27,16 @@ class PanelPage:
         self.panel_content = page.get_by_test_id("data-testid panel content")
         self.canvas = page.get_by_test_id("uplot-main-div").locator("canvas")
 
+        # if no source
+        self.no_source_message = page.get_by_text("No data sources found")
+        self.add_data_link = page.get_by_test_id("data-testid Data source list dropdown").get_by_role("link", name="Configure a new data source")
 
-        # If no data source found
-        self.no_data_source = page.get_by_text("No data sources found")
+        #to search testdata
+        self.filter_search = page.get_by_role("textbox", name="Filter by name or type")
+        self.add_source = page.get_by_role("button", name="Add new data source TestData")
 
-        #this opens a new tab , so we need to capture it
-        self.configure_data_source_link = (page.get_by_test_id("data-testid Data source list dropdown").get_by_role("link", name="Configure a new data source")
-)
+        self.data_source_naming = page.get_by_test_id("data-testid Data source settings page name input field")
+        self.save_data_source_button = page.get_by_test_id("data-testid Data source settings page Save and Test button")
 
     def select_testdata_source(self):
         self.testdata_source.click()
@@ -67,41 +70,42 @@ class PanelPage:
         self.zoom_button.click()
 
 
-    # If datasource not present
-    def ensure_testdata_datasource_exists(self)-> bool :
-        # If TestData already exists, nothing to do
-        if self.testdata_source.is_visible(timeout=3000):
-            return
+    def build_popup_page(self, popup):
+        self.newPage = popup
+        self.filter_search = popup.get_by_role("textbox", name="Filter by name or type")
+        self.add_source = popup.get_by_role("button", name="Add new data source TestData")
+        self.data_source_naming = popup.get_by_test_id("data-testid Data source settings page name input field")
+        self.save_data_source_button = popup.get_by_test_id("data-testid Data source settings page Save and Test button")
+        self.dashboard_load = popup.get_by_role("link", name="Build a dashboard")
 
-        # No data sources found
-        if self.no_data_source.is_visible(timeout=3000):
 
-            # Capture the popup window
+    def ensure_testdata_exists(self):
+
+        #load 
+        self.panel_editor.wait_for(timeout=5000)
+        
+        #if the testData is already available then no need
+        if self.testdata_source.is_visible(timeout=2000):
+            return None
+        
+        #if message persists
+        if self.no_source_message.is_visible(timeout=2000):
             with self.page.expect_popup() as popup_info:
-                self.configure_data_source_link.click()
+                self.add_data_link.click()
+            
+            newPage = popup_info.value
+            self.build_popup_page(newPage)
 
-            datasource_page = popup_info.value
+            self.filter_search.fill("TestData")
+            self.add_source.click()
 
-            # Search Box
-            datasource_page.get_by_role("textbox", name="Filter by name or type").fill("TestData")
+            self.data_source_naming.click()
+            self.data_source_naming.press("ControlOrMeta+a")
+            self.data_source_naming.fill("TestData")
 
-            # Add TestData datasource
-            datasource_page.get_by_role("button", name="Add new data source TestData").click()
+            self.save_data_source_button.click()
+            self.dashboard_load.click()
 
-            # Rename datasource explicitly (good practice)
-            name_input = datasource_page.get_by_test_id("data-testid Data source settings page name input field")
-            name_input.click()
-            name_input.press("ControlOrMeta+a")
-            name_input.fill("TestData")
-
-            # Save & Test
-            datasource_page.get_by_test_id("data-testid Data source settings page Save and Test button").click()
-
-            # Verify success
-            # expect(datasource_page.get_by_test_id("data-testid Alert success")).to_contain_text("Data source is working")
-
-            # Go back to dashboard / panel editor
-            datasource_page.get_by_role("link", name="Build a dashboard").click()
-
-            return True
-        return False
+            return newPage
+        
+        raise RuntimeError("Unexpected datasource state")
