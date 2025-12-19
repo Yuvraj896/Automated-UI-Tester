@@ -1,0 +1,23 @@
+services:
+  # Service 1: The Application under test
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Service 2: Your Playwright Tests
+  tests:
+    build: .
+    depends_on:
+      grafana:
+        condition: service_healthy # Wait until Grafana is actually ready
+    environment:
+      # We point the test to the SERVICE NAME 'grafana-app' instead of localhost
+      - BASE_URL=http://grafana:3000
+    volumes:
+      - .:/app

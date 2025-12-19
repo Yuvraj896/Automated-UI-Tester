@@ -6,3 +6,6 @@ __pycache__/
 
 # pytest cache
 .pytest_cache/
+
+test-results/
+/tests/snapshots/

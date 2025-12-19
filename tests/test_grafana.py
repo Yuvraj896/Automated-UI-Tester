@@ -3,12 +3,15 @@ from pages.login_page import LoginPage
 from pages.home_page import HomePage
 from pages.dashboard_page import DashBoardPage
 from pages.panel_page import PanelPage
+import os
 
 def test_grafana(page: Page, assert_snapshot):
     # browser :- Using fixture
     # Login
     login_page = LoginPage(page)
-    login_page.navigate("http://localhost:3000")
+    
+    url = os.getenv("BASE_URL", "http://localhost:3000")
+    login_page.navigate(url)
     login_page.login("admin", "admin")
         
     # ASSERT: Grafana shell is visible (from codegen)
